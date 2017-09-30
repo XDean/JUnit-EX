@@ -1,23 +1,24 @@
 package xdean.junit.ex.paramv2;
 
-import static xdean.jex.util.cache.CacheUtil.cache;
+import static xdean.jex.util.cache.CacheUtil.*;
+import lombok.Value;
 
 import org.junit.runner.Description;
 import org.junit.runners.model.FrameworkMethod;
 
-import xdean.junit.ex.annotation.ParamTestName;
+import xdean.jex.util.cache.CacheUtil;
 
-public class Param<P> {
+@Value
+class Param<P> {
 
   String name;
   P value;
 
-  public Description getDescription(FrameworkMethod method) {
-    return cache(this, method, () -> Description.createTestDescription(name, getName(method).replace("$", name)));
+  public Description getDescription(FrameworkMethod method, String displayName) {
+    return cache(this, method, () -> Description.createTestDescription(name, displayName));
   }
 
-  private String getName(FrameworkMethod method) {
-    ParamTestName nameAnno = method.getAnnotation(ParamTestName.class);
-    return nameAnno == null ? method.getName() : nameAnno.value();
+  public Description getDescription(FrameworkMethod method) {
+    return CacheUtil.<Description> get(this, method).get();
   }
 }

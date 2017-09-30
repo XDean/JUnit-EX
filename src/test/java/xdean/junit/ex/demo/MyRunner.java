@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.junit.runners.model.InitializationError;
 
-import xdean.junit.ex.param.ParamTestRunner;
+import xdean.junit.ex.paramv2.ParamTestRunner;
 
 public class MyRunner extends ParamTestRunner<Integer> {
   public MyRunner(Class<?> clz) throws InitializationError {
@@ -13,7 +13,7 @@ public class MyRunner extends ParamTestRunner<Integer> {
   }
 
   @Override
-  protected List<Integer> getParams() {
+  protected List<Integer> getParamValues() {
     return Arrays.asList(0, 1, 2, 3, 4);
   }
 }

@@ -1,4 +1,4 @@
-package xdean.junit.ex.annotation;
+package xdean.junit.ex.paramv2.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface ParamTestName {
-  String value();
+public @interface ParamTest {
+  String value();// name
 }
