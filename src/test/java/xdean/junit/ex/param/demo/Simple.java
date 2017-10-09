@@ -1,4 +1,4 @@
-package xdean.junit.ex.demo;
+package xdean.junit.ex.param.demo;
 
 import static org.junit.Assert.assertEquals;
 

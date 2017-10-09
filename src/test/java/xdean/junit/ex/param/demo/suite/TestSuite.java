@@ -1,4 +1,4 @@
-package xdean.junit.ex.demo.suite;
+package xdean.junit.ex.param.demo.suite;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;

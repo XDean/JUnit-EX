@@ -8,5 +8,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface ParamTest {
-  String value() default "";// name
+  String value() default "";// test display name. There are embed value: ${param} and ${test}
 }
