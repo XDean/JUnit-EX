@@ -1,4 +1,4 @@
-package xdean.junit.ex.paramv2;
+package xdean.junit.ex.param;
 
 import static xdean.jex.util.lang.ExceptionUtil.uncheck;
 
@@ -28,9 +28,9 @@ import org.junit.runners.model.Statement;
 
 import xdean.jex.util.lang.PrimitiveTypeUtil;
 import xdean.jex.util.reflect.ReflectUtil;
-import xdean.junit.ex.paramv2.annotation.GroupBy;
-import xdean.junit.ex.paramv2.annotation.GroupBy.Group;
-import xdean.junit.ex.paramv2.annotation.ParamTest;
+import xdean.junit.ex.param.annotation.GroupBy;
+import xdean.junit.ex.param.annotation.ParamTest;
+import xdean.junit.ex.param.annotation.GroupBy.Group;
 
 public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
 
@@ -85,7 +85,7 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
    * @param errors
    */
   protected void validateParamGetter(List<Throwable> errors) {
-    getTestClass().getAnnotatedMethods(xdean.junit.ex.paramv2.annotation.Param.class).forEach(m -> {
+    getTestClass().getAnnotatedMethods(xdean.junit.ex.param.annotation.Param.class).forEach(m -> {
       Method method = m.getMethod();
       if (!Modifier.isStatic(method.getModifiers())) {
         errors.add(new Exception("Param Getter Method " + m.getName() + " should be static."));
@@ -100,7 +100,7 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
         errors.add(new Exception("Param Getter Method " + m.getName() + " should return Param or List<Param>."));
       }
     });
-    getTestClass().getAnnotatedFields(xdean.junit.ex.paramv2.annotation.Param.class).forEach(f -> {
+    getTestClass().getAnnotatedFields(xdean.junit.ex.param.annotation.Param.class).forEach(f -> {
       Field field = f.getField();
       if (!Modifier.isStatic(field.getModifiers())) {
         errors.add(new Exception("Param Getter Field " + f.getName() + " should be static."));
@@ -184,9 +184,9 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
   @SuppressWarnings("unchecked")
   protected List<P> getParamValues() {
     List<Object> list = new ArrayList<>();
-    getTestClass().getAnnotatedFields(xdean.junit.ex.paramv2.annotation.Param.class)
+    getTestClass().getAnnotatedFields(xdean.junit.ex.param.annotation.Param.class)
         .forEach(f -> list.add(uncheck(() -> f.get(null))));
-    getTestClass().getAnnotatedMethods(xdean.junit.ex.paramv2.annotation.Param.class)
+    getTestClass().getAnnotatedMethods(xdean.junit.ex.param.annotation.Param.class)
         .forEach(m -> list.add(uncheck(() -> m.invokeExplosively(null))));
     return list.stream().flatMap(param -> {
       if (getParamClass().isInstance(param)) {

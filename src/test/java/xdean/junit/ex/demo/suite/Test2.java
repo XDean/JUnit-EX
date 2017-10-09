@@ -1,4 +1,4 @@
-package xdean.junit.ex.demo;
+package xdean.junit.ex.demo.suite;
 
 import static org.junit.Assert.assertEquals;
 
@@ -13,18 +13,12 @@ import xdean.junit.ex.param.annotation.GroupBy.Group;
 
 @RunWith(ParamTestRunner.class)
 @GroupBy(Group.PARAM)
-public class Simple {
+public class Test2 {
 
   @Param
   public static final int[] PARAM = { 1, 2, 3 };
 
-  static int[] ADD = { 1, 2, 3, 4, 5 };
   static int[] SQURE = { 0, 1, 4, 9, 16 };
-
-  @ParamTest
-  public void testAdd(int i) {
-    assertEquals(ADD[i], i + 1);
-  }
 
   @ParamTest
   public void testSqure(int i) {
@@ -32,7 +26,7 @@ public class Simple {
   }
 
   @Test
-  public void testOther() {
-    assertEquals(ADD.length, SQURE.length);
+  public void testOther2() {
+    assertEquals(5, SQURE.length);
   }
 }

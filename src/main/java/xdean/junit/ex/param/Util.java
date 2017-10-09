@@ -1,10 +1,10 @@
-package xdean.junit.ex.paramv2;
+package xdean.junit.ex.param;
 
 import org.junit.runners.model.Statement;
 
 public interface Util {
 
-  static Statement statement(xdean.junit.ex.paramv2.IStatement s) {
+  static Statement statement(xdean.junit.ex.param.IStatement s) {
     return s.toJunit();
   }
 

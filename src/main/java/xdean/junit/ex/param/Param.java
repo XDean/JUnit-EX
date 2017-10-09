@@ -1,4 +1,4 @@
-package xdean.junit.ex.paramv2;
+package xdean.junit.ex.param;
 
 import static xdean.jex.util.cache.CacheUtil.cache;
 import lombok.AccessLevel;

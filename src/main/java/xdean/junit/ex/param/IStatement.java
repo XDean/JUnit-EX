@@ -1,4 +1,4 @@
-package xdean.junit.ex.paramv2;
+package xdean.junit.ex.param;
 
 public interface IStatement {
   void evaluate() throws Throwable;
