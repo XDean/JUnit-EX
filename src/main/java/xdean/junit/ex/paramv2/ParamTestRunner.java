@@ -15,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.internal.runners.statements.Fail;
 import org.junit.runner.Description;
@@ -32,21 +34,24 @@ import xdean.junit.ex.paramv2.annotation.ParamTest;
 
 public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
 
-  private Class<P> paramClass;
+  private Class<P> paramClass;// TODO: ParamClass maybe ParaziedType (TypeVariabble can deny)
   private List<Param<P>> params;
-  private Map<Param<P>, Description> paramDescriptions;
   private Map<FrameworkMethod, Description> testDescriptions;
   private boolean groupByParam;
   private Description rootDescription;
+  private Description other;
 
   public ParamTestRunner(Class<?> klass) throws InitializationError {
     super(klass);
-    paramDescriptions = new ConcurrentHashMap<>();
     testDescriptions = new ConcurrentHashMap<>();
   }
 
   @Override
   protected void collectInitializationErrors(List<Throwable> errors) {
+    if (computeParamTestMethods().size() == 0) {
+      errors.add(new Exception("There is no param test case!"));
+      return;
+    }
     if (!initParamClass(errors)) {
       return;
     }
@@ -56,9 +61,26 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
     initParams();
   }
 
+  @Override
+  protected void validateInstanceMethods(List<Throwable> errors) {
+    validatePublicVoidNoArgMethods(After.class, false, errors);
+    validatePublicVoidNoArgMethods(Before.class, false, errors);
+    validateTestMethods(errors);
+
+    if (computeTestMethods().size() == 0) {
+      errors.add(new Exception("No runnable methods"));
+    }
+  }
+
+  @Override
+  protected void validateTestMethods(List<Throwable> errors) {
+    validatePublicVoidNoArgMethods(Test.class, false, errors);
+    validatePublicVoidParamMethods(ParamTest.class, false, errors);
+  }
+
   /**
-   * Parameter provider method must be {@code public static Param/List<Param> methodName();}<br>
-   * Parameter provider field must be {@code Param/List<Param> fieldName;} TODO array
+   * Parameter provider method must be {@code public static Param/Param[]/List<Param> methodName();}<br>
+   * Parameter provider field must be {@code Param/Param[]/List<Param> fieldName;}
    *
    * @param errors
    */
@@ -96,8 +118,13 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
   }
 
   protected boolean isParamProviderType(Type type) {
-    if (type instanceof Class && Objects.equals(PrimitiveTypeUtil.toWrapper((Class<?>) type), getParamClass())) {
-      return true;
+    if (type instanceof Class) {
+      Class<?> clz = (Class<?>) type;
+      if (Objects.equals(PrimitiveTypeUtil.toWrapper(clz), getParamClass())) {
+        return true;
+      } else if (clz.isArray()) {
+        return Objects.equals(PrimitiveTypeUtil.toWrapper(clz.getComponentType()), getParamClass());
+      }
     }
     Class<?>[] genericTypes = ReflectUtil.getGenericTypes(type, List.class);
     return genericTypes.length == 1 && Objects.equals(genericTypes[0], getParamClass());
@@ -112,7 +139,7 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
 
   private void initParams() {
     params = getParamValues().stream()
-        .map(param -> new Param<>(getParamDisplayName(param), param))
+        .map(param -> Param.create(getParamDisplayName(param), param))
         .collect(Collectors.toList());
   }
 
@@ -127,16 +154,16 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
   protected boolean initParamClass(List<Throwable> errors) {
     Class<?>[] genericTypes = ReflectUtil.getGenericTypes(this.getClass(), ParamTestRunner.class);
     if (genericTypes.length == 0 || genericTypes[0] == null) {
-      Class<?>[] classes = computeTestMethods().stream()
+      Class<?>[] classes = computeParamTestMethods().stream()
           .filter(m -> m.getMethod().getParameterCount() == 1)
-          .map(m -> m.getMethod().getParameterTypes()[0])
+          .map(m -> PrimitiveTypeUtil.toWrapper(m.getMethod().getParameterTypes()[0]))
           .distinct()
           .toArray(Class<?>[]::new);
       if (classes.length != 1) {
         errors.add(new InitializationError("Con't infer the parameter type."));
         return false;
       } else {
-        paramClass = (Class<P>) PrimitiveTypeUtil.toWrapper(classes[0]);
+        paramClass = (Class<P>) classes[0];
       }
     } else {
       paramClass = (Class<P>) genericTypes[0];
@@ -164,6 +191,8 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
     return list.stream().flatMap(param -> {
       if (getParamClass().isInstance(param)) {
         return Stream.of((P) param);
+      } else if (param.getClass().isArray()) {
+        return Stream.of((P[]) PrimitiveTypeUtil.toWrapperArray(param));
       } else {
         return ((List<P>) param).stream();
       }
@@ -171,14 +200,18 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
   }
 
   @Override
+  protected List<FrameworkMethod> getChildren() {
+    return computeTestMethods();
+  }
+
+  @Override
   public Description getDescription() {
     if (rootDescription == null) {
       rootDescription = Description.createSuiteDescription(getName(), getRunnerAnnotations());
-      List<FrameworkMethod> tests = getChildren();
+      List<FrameworkMethod> tests = computeParamTestMethods();
       List<Param<P>> params = getParams();
       params.forEach(param -> {
-        Description suite = Description.createSuiteDescription(param.getName());
-        paramDescriptions.put(param, suite);
+        Description suite = param.getDescription();
         tests.forEach(test -> suite.addChild(param.getDescription(test, getTestDisplayName(test, param))));
         if (groupByParam) {
           rootDescription.addChild(suite);
@@ -192,27 +225,42 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
           rootDescription.addChild(suite);
         }
       });
+
+      List<FrameworkMethod> others = computeNoParamTestMethods();
+      other = Description.createSuiteDescription("other");
+      others.forEach(m -> other.addChild(super.describeChild(m)));
+      rootDescription.addChild(other);
     }
     return rootDescription;
   }
 
   @Override
   protected Description describeChild(FrameworkMethod test) {
-    return testDescriptions.get(test);
+    if (isParamTest(test)) {
+      getDescription();
+      return testDescriptions.get(test);
+    } else {
+      return super.describeChild(test);
+    }
   }
 
   @Override
   protected void runChild(FrameworkMethod method, RunNotifier notifier) {
-    params.forEach(param -> {
-      Description description = param.getDescription(method);
-      if (isIgnored(method)) {
-        notifier.fireTestIgnored(description);
-      } else {
-        runLeaf(methodBlock(method, param), description, notifier);
-      }
-    });
+    if (isParamTest(method)) {
+      params.forEach(param -> {
+        Description description = param.getDescription(method);
+        if (isIgnored(method)) {
+          notifier.fireTestIgnored(description);
+        } else {
+          runLeaf(methodBlock(method, param), description, notifier);
+        }
+      });
+    } else {
+      super.runChild(method, notifier);
+    }
   }
 
+  @SuppressWarnings("deprecation")
   protected Statement methodBlock(FrameworkMethod method, Param<P> param) {
     Object test;
     try {
@@ -234,19 +282,15 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
     return Util.statement(() -> method.invokeExplosively(test, param.getValue()));
   }
 
-  /**
-   * Actually is validatePublicVoid(NoArg/Param)Methods
-   */
-  @Override
-  protected void validatePublicVoidNoArgMethods
-      (Class<? extends Annotation> annotation, boolean isStatic, List<Throwable> errors) {
+  protected void validatePublicVoidParamMethods(Class<? extends Annotation> annotation, boolean isStatic,
+      List<Throwable> errors) {
     List<FrameworkMethod> methods = getTestClass().getAnnotatedMethods(annotation);
     for (FrameworkMethod eachTestMethod : methods) {
       eachTestMethod.validatePublicVoid(isStatic, errors);
       Method method = eachTestMethod.getMethod();
       Class<?>[] parameterTypes = method.getParameterTypes();
       if (parameterTypes.length != 1) {
-        errors.add(new Exception("Method " + method.getName() + " should have no parameters"));
+        errors.add(new Exception("Method " + method.getName() + " should have only one parameter"));
       }
       // The only parameter must be the param type.
       else if (!Objects.equals(PrimitiveTypeUtil.toWrapper(parameterTypes[0]), getParamClass())) {
@@ -257,6 +301,13 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
 
   @Override
   protected List<FrameworkMethod> computeTestMethods() {
+    List<FrameworkMethod> list = new ArrayList<>();
+    list.addAll(computeNoParamTestMethods());
+    list.addAll(computeParamTestMethods());
+    return list;
+  }
+
+  protected List<FrameworkMethod> computeNoParamTestMethods() {
     return getTestClass().getAnnotatedMethods(Test.class);
   }
 
@@ -264,11 +315,16 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
     return getTestClass().getAnnotatedMethods(ParamTest.class);
   }
 
+  protected boolean isParamTest(FrameworkMethod method) {
+    return method.getAnnotation(ParamTest.class) != null;
+  }
+
   /******************************************************************/
 
   protected String getTestDisplayName(FrameworkMethod method, Param<P> param) {
-    ParamTest nameAnno = method.getAnnotation(ParamTest.class);
-    return nameAnno == null ? method.getName() : nameAnno.value().replace("$", param.getName());
+    ParamTest anno = method.getAnnotation(ParamTest.class);
+    return anno == null || anno.value().isEmpty() ? (groupByParam ? method.getName() : param.getName()) :
+        anno.value().replace("${param}", param.getName()).replace("${test}", method.getName());
   }
 
   protected String getParamDisplayName(P param) {
