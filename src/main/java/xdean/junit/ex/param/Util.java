@@ -2,7 +2,7 @@ package xdean.junit.ex.param;
 
 import org.junit.runners.model.Statement;
 
-public interface Util {
+interface Util {
 
   static Statement statement(xdean.junit.ex.param.IStatement s) {
     return s.toJunit();

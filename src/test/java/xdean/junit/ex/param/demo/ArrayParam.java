@@ -1,6 +1,6 @@
 package xdean.junit.ex.param.demo;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,26 +13,25 @@ import xdean.junit.ex.param.annotation.ParamTest;
 
 @RunWith(ParamTestRunner.class)
 @GroupBy(Group.PARAM)
-public class Simple {
+public class ArrayParam {
 
   @Param
-  public static final int[] PARAM = { 1, 2, 3 };
-
-  static int[] ADD = { 1, 2, 3, 4, 5 };
-  static int[] SQURE = { 0, 1, 4, 9, 16 };
+  public static final int[] PARAM = { 10, 1 };
+  @Param
+  public static final int[][] PARAM_ARRAY = { { 10, 2 }, { 10, 3 } };
 
   @ParamTest
-  public void testAdd(int i) {
-    assertEquals(ADD[i], i + 1);
+  public void testLength(int[] i) {
+    assertEquals(2, i.length);
   }
 
   @ParamTest
-  public void testSqure(int i) {
-    assertEquals(SQURE[i], i * i);
+  public void testFirst(int[] i) {
+    assertEquals(10, i[0]);
   }
 
-  @Test
-  public void testOther() {
-    assertEquals(ADD.length, SQURE.length);
+  @Test(expected = RuntimeException.class)
+  public void testError() {
+    throw new RuntimeException();
   }
 }

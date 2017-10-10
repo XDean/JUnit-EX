@@ -1,13 +1,16 @@
 package xdean.junit.ex.param;
 
-import static xdean.jex.util.lang.ExceptionUtil.uncheck;
+import static xdean.jex.util.lang.ExceptionUtil.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,15 +29,18 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
 
+import xdean.jex.extra.Pair;
 import xdean.jex.util.lang.PrimitiveTypeUtil;
-import xdean.jex.util.reflect.ReflectUtil;
+import xdean.jex.util.reflect.AnnotationUtil;
+import xdean.jex.util.reflect.GenericUtil;
 import xdean.junit.ex.param.annotation.GroupBy;
-import xdean.junit.ex.param.annotation.ParamTest;
 import xdean.junit.ex.param.annotation.GroupBy.Group;
+import xdean.junit.ex.param.annotation.Param.ParamType;
+import xdean.junit.ex.param.annotation.ParamTest;
 
 public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
 
-  private Class<P> paramClass;// TODO: ParamClass maybe ParaziedType (TypeVariabble can deny)
+  private Type paramType;
   private List<Param<P>> params;
   private Map<FrameworkMethod, Description> testDescriptions;
   private boolean groupByParam;
@@ -48,17 +54,23 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
 
   @Override
   protected void collectInitializationErrors(List<Throwable> errors) {
-    if (computeParamTestMethods().size() == 0) {
-      errors.add(new Exception("There is no param test case!"));
-      return;
-    }
+    validateParamTestExist(errors);
     if (!initParamClass(errors)) {
       return;
     }
     super.collectInitializationErrors(errors);
     validateParamGetter(errors);
-    initGroupBy();
-    initParams();
+    if (errors.isEmpty()) {
+      initGroupBy();
+      initParams();
+    }
+  }
+
+  private void validateParamTestExist(List<Throwable> errors) {
+    if (computeParamTestMethods().size() == 0) {
+      errors.add(new Exception("There is no param test case!"));
+      return;
+    }
   }
 
   @Override
@@ -85,49 +97,73 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
    * @param errors
    */
   protected void validateParamGetter(List<Throwable> errors) {
-    getTestClass().getAnnotatedMethods(xdean.junit.ex.param.annotation.Param.class).forEach(m -> {
-      Method method = m.getMethod();
-      if (!Modifier.isStatic(method.getModifiers())) {
-        errors.add(new Exception("Param Getter Method " + m.getName() + " should be static."));
-      }
-      if (!Modifier.isPublic(method.getModifiers())) {
-        errors.add(new Exception("Param Getter Method " + m.getName() + " should be public."));
-      }
-      if (method.getParameterCount() != 0) {
-        errors.add(new Exception("Param Getter Method " + m.getName() + " should has no argument."));
-      }
-      if (!isParamProviderType(method.getGenericReturnType())) {
-        errors.add(new Exception("Param Getter Method " + m.getName() + " should return Param or List<Param>."));
-      }
-    });
-    getTestClass().getAnnotatedFields(xdean.junit.ex.param.annotation.Param.class).forEach(f -> {
-      Field field = f.getField();
-      if (!Modifier.isStatic(field.getModifiers())) {
-        errors.add(new Exception("Param Getter Field " + f.getName() + " should be static."));
-      }
-      if (!Modifier.isPublic(field.getModifiers())) {
-        errors.add(new Exception("Param Getter Field " + f.getName() + " should be public."));
-      }
-      if (!Modifier.isFinal(field.getModifiers())) {
-        errors.add(new Exception("Param Getter Field " + f.getName() + " should be final."));
-      }
-      if (!isParamProviderType(field.getGenericType())) {
-        errors.add(new Exception("Param Getter Field " + f.getName() + " should be Param or List<Param>."));
-      }
-    });
+    getTestClass().getAnnotatedMethods(xdean.junit.ex.param.annotation.Param.class).forEach(
+        m -> {
+          Method method = m.getMethod();
+          if (!Modifier.isStatic(method.getModifiers())) {
+            errors.add(new Exception("Param Getter Method " + m.getName() + " should be static."));
+          }
+          if (!Modifier.isPublic(method.getModifiers())) {
+            errors.add(new Exception("Param Getter Method " + m.getName() + " should be public."));
+          }
+          if (method.getParameterCount() != 0) {
+            errors.add(new Exception("Param Getter Method " + m.getName() + " should has no argument."));
+          }
+          if (method.getParameterTypes().length != 0) {
+            errors.add(new Exception("Param Getter Method " + m.getName() + " should not have generic type."));
+          }
+          xdean.junit.ex.param.annotation.Param anno = m.getAnnotation(xdean.junit.ex.param.annotation.Param.class);
+          if (!isParamProviderType(anno, method.getGenericReturnType())) {
+            errors.add(new Exception("Param Getter Method " + m.getName() + " should return "
+                + anno.value().getParamString(getParamType()) + "."));
+          }
+        });
+    getTestClass().getAnnotatedFields(xdean.junit.ex.param.annotation.Param.class).forEach(
+        f -> {
+          Field field = f.getField();
+          if (!Modifier.isStatic(field.getModifiers())) {
+            errors.add(new Exception("Param Getter Field " + f.getName() + " should be static."));
+          }
+          if (!Modifier.isPublic(field.getModifiers())) {
+            errors.add(new Exception("Param Getter Field " + f.getName() + " should be public."));
+          }
+          if (!Modifier.isFinal(field.getModifiers())) {
+            errors.add(new Exception("Param Getter Field " + f.getName() + " should be final."));
+          }
+          xdean.junit.ex.param.annotation.Param anno = f.getAnnotation(xdean.junit.ex.param.annotation.Param.class);
+          if (!isParamProviderType(anno, field.getGenericType())) {
+            errors.add(new Exception("Param Getter Field " + f.getName() + " should be "
+                + anno.value().getParamString(getParamType())
+                + "."));
+          }
+        });
   }
 
-  protected boolean isParamProviderType(Type type) {
+  protected boolean isParamProviderType(xdean.junit.ex.param.annotation.Param param, Type type) {
+    if (Objects.equals(toWrapper(type), getParamType())) {
+      return updateParamType(param, ParamType.VALUE);
+    }
     if (type instanceof Class) {
       Class<?> clz = (Class<?>) type;
-      if (Objects.equals(PrimitiveTypeUtil.toWrapper(clz), getParamClass())) {
-        return true;
-      } else if (clz.isArray()) {
-        return Objects.equals(PrimitiveTypeUtil.toWrapper(clz.getComponentType()), getParamClass());
+      if (clz.isArray()) {
+        return Objects.equals(PrimitiveTypeUtil.toWrapper(clz.getComponentType()), getParamType())
+            && updateParamType(param, ParamType.ARRAY);
       }
     }
-    Class<?>[] genericTypes = ReflectUtil.getGenericTypes(type, List.class);
-    return genericTypes.length == 1 && Objects.equals(genericTypes[0], getParamClass());
+    Type[] genericTypes = GenericUtil.getGenericTypes(type, List.class);
+    return genericTypes.length == 1 && Objects.equals(genericTypes[0], getParamType())
+        && updateParamType(param, ParamType.LIST);
+  }
+
+  protected boolean updateParamType(xdean.junit.ex.param.annotation.Param param, ParamType type) {
+    if (param.value() == type) {
+      return true;
+    } else if (param.value() == ParamType.UNDEFINED) {
+      AnnotationUtil.changeAnnotationValue(param, "value", type);
+      return true;
+    } else {
+      return false;
+    }
   }
 
   protected void initGroupBy() {
@@ -150,53 +186,62 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
    * @param errors
    * @return
    */
-  @SuppressWarnings("unchecked")
   protected boolean initParamClass(List<Throwable> errors) {
-    Class<?>[] genericTypes = ReflectUtil.getGenericTypes(this.getClass(), ParamTestRunner.class);
-    if (genericTypes.length == 0 || genericTypes[0] == null) {
-      Class<?>[] classes = computeParamTestMethods().stream()
+    Type[] genericTypes = GenericUtil.getGenericTypes(this.getClass(), ParamTestRunner.class);
+    if (genericTypes.length == 0 || genericTypes[0] instanceof TypeVariable) {
+      Type[] declaredTypes = computeParamTestMethods()
+          .stream()
           .filter(m -> m.getMethod().getParameterCount() == 1)
-          .map(m -> PrimitiveTypeUtil.toWrapper(m.getMethod().getParameterTypes()[0]))
+          .map(m -> toWrapper(m.getMethod().getGenericParameterTypes()[0]))
           .distinct()
-          .toArray(Class<?>[]::new);
-      if (classes.length != 1) {
+          .toArray(Type[]::new);
+      if (declaredTypes.length != 1) {
         errors.add(new InitializationError("Con't infer the parameter type."));
         return false;
       } else {
-        paramClass = (Class<P>) classes[0];
+        paramType = declaredTypes[0];
       }
     } else {
-      paramClass = (Class<P>) genericTypes[0];
+      paramType = genericTypes[0];
     }
     return true;
   }
 
   /******************************************************************************/
 
-  /**
-   * First, List field named "param".<br>
-   * Second, return List method named "param"<br>
-   *
-   * Can overrride.
-   *
-   * @return
-   */
   @SuppressWarnings("unchecked")
   protected List<P> getParamValues() {
-    List<Object> list = new ArrayList<>();
+    List<Pair<ParamType, Object>> list = new ArrayList<>();
     getTestClass().getAnnotatedFields(xdean.junit.ex.param.annotation.Param.class)
-        .forEach(f -> list.add(uncheck(() -> f.get(null))));
+        .forEach(f -> list.add(Pair.of(f.getAnnotation(xdean.junit.ex.param.annotation.Param.class).value(),
+            uncheck(() -> f.get(null)))));
     getTestClass().getAnnotatedMethods(xdean.junit.ex.param.annotation.Param.class)
-        .forEach(m -> list.add(uncheck(() -> m.invokeExplosively(null))));
-    return list.stream().flatMap(param -> {
-      if (getParamClass().isInstance(param)) {
-        return Stream.of((P) param);
-      } else if (param.getClass().isArray()) {
-        return Stream.of((P[]) PrimitiveTypeUtil.toWrapperArray(param));
-      } else {
-        return ((List<P>) param).stream();
+        .forEach(m -> list.add(Pair.of(m.getAnnotation(xdean.junit.ex.param.annotation.Param.class).value(),
+            invoke(m))));
+    return list.stream().flatMap(pair -> {
+      ParamType type = pair.getLeft();
+      Object value = pair.getRight();
+      switch (type) {
+      case VALUE:
+        return Stream.of((P) value);
+      case ARRAY:
+        return Stream.of((P[]) PrimitiveTypeUtil.toWrapperArray(value));
+      case LIST:
+        return ((List<P>) value).stream();
+      case UNDEFINED:
+      default:
+        throw new Error("Never happened");
       }
     }).collect(Collectors.toList());
+  }
+
+  private Object invoke(FrameworkMethod m) {
+    try {
+      return m.invokeExplosively(null);
+    } catch (Throwable e) {
+      throwAsUncheck(e);
+    }
+    return null;
   }
 
   @Override
@@ -288,12 +333,12 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
     for (FrameworkMethod eachTestMethod : methods) {
       eachTestMethod.validatePublicVoid(isStatic, errors);
       Method method = eachTestMethod.getMethod();
-      Class<?>[] parameterTypes = method.getParameterTypes();
+      Type[] parameterTypes = method.getGenericParameterTypes();
       if (parameterTypes.length != 1) {
         errors.add(new Exception("Method " + method.getName() + " should have only one parameter"));
       }
       // The only parameter must be the param type.
-      else if (!Objects.equals(PrimitiveTypeUtil.toWrapper(parameterTypes[0]), getParamClass())) {
+      else if (!Objects.equals(toWrapper(parameterTypes[0]), getParamType())) {
         errors.add(new Exception("Method " + method.getName() + " don't have the correct param type"));
       }
     }
@@ -328,6 +373,9 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
   }
 
   protected String getParamDisplayName(P param) {
+    if (param.getClass().isArray()) {
+      return Arrays.deepToString((Object[]) PrimitiveTypeUtil.toWrapperArray(param));
+    }
     return param.toString();
   }
 
@@ -335,7 +383,30 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
     return params;
   }
 
-  public Class<P> getParamClass() {
-    return paramClass;
+  /**
+   * The param type. Class or ParameterizedType
+   *
+   * @return
+   */
+  protected Type getParamType() {
+    return paramType;
+  }
+
+  protected Class<?> getParamClass() {
+    if (paramType instanceof Class) {
+      return (Class<?>) paramType;
+    } else if (paramType instanceof ParameterizedType) {
+      return (Class<?>) ((ParameterizedType) paramType).getRawType();
+    } else {
+      throw new Error("Never Happen.");
+    }
+  }
+
+  protected Type toWrapper(Type type) {
+    if (type instanceof Class) {
+      return PrimitiveTypeUtil.toWrapper((Class<?>) type);
+    } else {
+      return type;
+    }
   }
 }
