@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.junit.internal.runners.statements.Fail;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
@@ -38,7 +37,7 @@ import xdean.junit.ex.param.annotation.GroupBy.Group;
 import xdean.junit.ex.param.annotation.Param.ParamType;
 import xdean.junit.ex.param.annotation.ParamTest;
 
-public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
+public class ParamTestRunner<P> extends FriendlyBlockJUnit4ClassRunner {
 
   private Type paramType;
   private List<Param<P>> params;
@@ -319,7 +318,7 @@ public class ParamTestRunner<P> extends BlockJUnit4ClassRunner {
     statement = withPotentialTimeout(method, test, statement);
     statement = withBefores(method, test, statement);
     statement = withAfters(method, test, statement);
-    // statement = withRules(method, test, statement); TODO
+    statement = withRules(method, test, statement);
     return statement;
   }
 
