@@ -32,6 +32,7 @@ import xdean.jex.extra.Pair;
 import xdean.jex.util.lang.PrimitiveTypeUtil;
 import xdean.jex.util.reflect.AnnotationUtil;
 import xdean.jex.util.reflect.GenericUtil;
+import xdean.junit.ex.friendly.FriendlyBlockJUnit4ClassRunner;
 import xdean.junit.ex.param.annotation.GroupBy;
 import xdean.junit.ex.param.annotation.GroupBy.Group;
 import xdean.junit.ex.param.annotation.Param.ParamType;

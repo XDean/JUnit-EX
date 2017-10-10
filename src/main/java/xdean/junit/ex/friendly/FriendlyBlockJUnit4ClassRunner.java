@@ -1,4 +1,4 @@
-package xdean.junit.ex.param;
+package xdean.junit.ex.friendly;
 
 import static org.junit.internal.runners.rules.RuleMemberValidator.*;
 
@@ -24,15 +24,12 @@ import org.junit.rules.RunRules;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.ParentRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 
 /**
- * Copied from JUnit 4.12 for some private methods.
- *
  * Implements the JUnit 4 standard test case class model, as defined by the annotations in the org.junit package. Many
  * users will never notice this class: it is now the default test class runner, but it should have exactly the same
  * behavior as the old test class runner ({@code JUnit4ClassRunner}).
@@ -53,7 +50,7 @@ import org.junit.runners.model.Statement;
  *
  * @since 4.5
  */
-class FriendlyBlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
+public class FriendlyBlockJUnit4ClassRunner extends FriendlyParentRunner<FrameworkMethod> {
   protected final ConcurrentHashMap<FrameworkMethod, Description> methodDescriptions = new ConcurrentHashMap<FrameworkMethod, Description>();
 
   /**
