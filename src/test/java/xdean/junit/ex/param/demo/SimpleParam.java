@@ -13,8 +13,7 @@ import xdean.junit.ex.param.annotation.ParamTest;
 
 @RunWith(ParamTestRunner.class)
 @GroupBy(Group.PARAM)
-public class Simple {
-
+public class SimpleParam {
   @Param
   public static final int[] PARAM = { 1, 2, 3 };
 

@@ -23,13 +23,13 @@ import org.junit.runners.model.RunnerBuilder;
  *
  * @since 4.0
  */
-public class Suite extends FriendlyParentRunner<Runner> {
+public class FriendlySuite extends FriendlyParentRunner<Runner> {
   /**
    * Returns an empty suite.
    */
   public static Runner emptySuite() {
     try {
-      return new Suite((Class<?>) null, new Class<?>[0]);
+      return new FriendlySuite((Class<?>) null, new Class<?>[0]);
     } catch (InitializationError e) {
       throw new RuntimeException("This shouldn't be possible");
     }
@@ -65,7 +65,7 @@ public class Suite extends FriendlyParentRunner<Runner> {
    * @param klass the root class
    * @param builder builds runners for classes in the suite
    */
-  public Suite(Class<?> klass, RunnerBuilder builder) throws InitializationError {
+  public FriendlySuite(Class<?> klass, RunnerBuilder builder) throws InitializationError {
     this(builder, klass, getAnnotatedClasses(klass));
   }
 
@@ -76,7 +76,7 @@ public class Suite extends FriendlyParentRunner<Runner> {
    * @param builder builds runners for classes in the suite
    * @param classes the classes in the suite
    */
-  public Suite(RunnerBuilder builder, Class<?>[] classes) throws InitializationError {
+  public FriendlySuite(RunnerBuilder builder, Class<?>[] classes) throws InitializationError {
     this(null, builder.runners(null, classes));
   }
 
@@ -86,7 +86,7 @@ public class Suite extends FriendlyParentRunner<Runner> {
    * @param klass the root of the suite
    * @param suiteClasses the classes in the suite
    */
-  protected Suite(Class<?> klass, Class<?>[] suiteClasses) throws InitializationError {
+  protected FriendlySuite(Class<?> klass, Class<?>[] suiteClasses) throws InitializationError {
     this(new AllDefaultPossibilitiesBuilder(true), klass, suiteClasses);
   }
 
@@ -97,7 +97,7 @@ public class Suite extends FriendlyParentRunner<Runner> {
    * @param klass the root of the suite
    * @param suiteClasses the classes in the suite
    */
-  protected Suite(RunnerBuilder builder, Class<?> klass, Class<?>[] suiteClasses) throws InitializationError {
+  protected FriendlySuite(RunnerBuilder builder, Class<?> klass, Class<?>[] suiteClasses) throws InitializationError {
     this(klass, builder.runners(klass, suiteClasses));
   }
 
@@ -107,7 +107,7 @@ public class Suite extends FriendlyParentRunner<Runner> {
    * @param klass root of the suite
    * @param runners for each class in the suite, a {@link Runner}
    */
-  protected Suite(Class<?> klass, List<Runner> runners) throws InitializationError {
+  protected FriendlySuite(Class<?> klass, List<Runner> runners) throws InitializationError {
     super(klass);
     this.runners = Collections.unmodifiableList(runners);
   }
