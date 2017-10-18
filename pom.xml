@@ -22,15 +22,10 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>xdean</groupId>
+			<groupId>com.github.XDean</groupId>
 			<artifactId>Java-EX</artifactId>
 			<version>0.0.5-SNAPSHOT</version>
 		</dependency>
-<!-- 		<dependency> -->
-<!-- 			<groupId>com.github.XDean</groupId> -->
-<!-- 			<artifactId>Java-EX</artifactId> -->
-<!-- 			<version>master-SNAPSHOT</version> -->
-<!-- 		</dependency> -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
