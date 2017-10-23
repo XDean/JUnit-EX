@@ -1,16 +1,16 @@
 package xdean.junit.ex.param;
 
 import static xdean.jex.util.cache.CacheUtil.cache;
+
+import org.junit.runner.Description;
+import org.junit.runners.model.FrameworkMethod;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
-
-import org.junit.runner.Description;
-import org.junit.runners.model.FrameworkMethod;
-
 import xdean.jex.util.cache.CacheUtil;
 
 @Getter
@@ -33,7 +33,8 @@ class Param<P> {
 
   public Description getDescription(FrameworkMethod method, String displayName) {
     return cache(this, method, () -> Description.createTestDescription(
-        String.format("Param: %s, Test: %s", name, method.getName()), displayName));
+        method.getMethod().getDeclaringClass().getName(), displayName,
+        String.format("Param: %s, Test: %s", name, method.getName())));
   }
 
   public Description getDescription(FrameworkMethod method) {
