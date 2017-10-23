@@ -173,10 +173,47 @@ public class ParamTestRunner<P> extends FriendlyBlockJUnit4ClassRunner {
     }
   }
 
-  private void initParams() {
+  protected void initParams() {
     params = getParamValues().stream()
         .map(param -> Param.create(getParamDisplayName(param), param))
         .collect(Collectors.toList());
+  }
+
+  protected void initDescription() {
+    if (rootDescription == null) {
+      rootDescription = Description.createSuiteDescription(getName(), getRunnerAnnotations());
+      List<FrameworkMethod> tests = computeParamTestMethods();
+      List<Param<P>> params = getParams();
+      params.forEach(param -> {
+        Description suite = param.getDescription();
+        tests
+            .forEach(test -> suite.addChild(param.getDescription(test, getTestDisplayName(test, param, groupByParam))));
+        if (groupByParam) {
+          rootDescription.addChild(suite);
+        }
+      });
+      tests.forEach(test -> {
+        Description suite = Description.createSuiteDescription(test.getName());
+        testDescriptions.put(test, suite);
+        params.forEach(
+            param -> suite.addChild(param.getDescription(test, getTestDisplayName(test, param, groupByParam))));
+        if (!groupByParam) {
+          rootDescription.addChild(suite);
+        }
+      });
+      Description other = getOtherDescription();
+      if (!other.isEmpty()) {
+        rootDescription.addChild(other);
+      }
+    }
+  }
+
+  private void initOther() {
+    if (other == null) {
+      List<FrameworkMethod> others = computeNoParamTestMethods();
+      other = Description.createSuiteDescription("other");
+      others.forEach(m -> other.addChild(super.describeChild(m)));
+    }
   }
 
   /**
@@ -251,38 +288,14 @@ public class ParamTestRunner<P> extends FriendlyBlockJUnit4ClassRunner {
 
   @Override
   public Description getDescription() {
-    if (rootDescription == null) {
-      rootDescription = Description.createSuiteDescription(getName(), getRunnerAnnotations());
-      List<FrameworkMethod> tests = computeParamTestMethods();
-      List<Param<P>> params = getParams();
-      params.forEach(param -> {
-        Description suite = param.getDescription();
-        tests.forEach(test -> suite.addChild(param.getDescription(test, getTestDisplayName(test, param))));
-        if (groupByParam) {
-          rootDescription.addChild(suite);
-        }
-      });
-      tests.forEach(test -> {
-        Description suite = Description.createSuiteDescription(test.getName());
-        testDescriptions.put(test, suite);
-        params.forEach(param -> suite.addChild(param.getDescription(test, getTestDisplayName(test, param))));
-        if (!groupByParam) {
-          rootDescription.addChild(suite);
-        }
-      });
-
-      List<FrameworkMethod> others = computeNoParamTestMethods();
-      other = Description.createSuiteDescription("other");
-      others.forEach(m -> other.addChild(super.describeChild(m)));
-      rootDescription.addChild(other);
-    }
+    initDescription();
     return rootDescription;
   }
 
   @Override
   protected Description describeChild(FrameworkMethod test) {
     if (isParamTest(test)) {
-      getDescription();
+      initDescription();
       return testDescriptions.get(test);
     } else {
       return super.describeChild(test);
@@ -366,10 +379,10 @@ public class ParamTestRunner<P> extends FriendlyBlockJUnit4ClassRunner {
 
   /******************************************************************/
 
-  protected String getTestDisplayName(FrameworkMethod method, Param<P> param) {
+  protected String getTestDisplayName(FrameworkMethod method, Param<?> param, boolean groupByParam) {
     ParamTest anno = method.getAnnotation(ParamTest.class);
-    return anno == null || anno.value().isEmpty() ? (groupByParam ? method.getName() : param.getName()) :
-        anno.value().replace("${param}", param.getName()).replace("${test}", method.getName());
+    return anno == null || anno.value().isEmpty() ? (groupByParam ? method.getName() : param.getName())
+        : anno.value().replace("${param}", param.getName()).replace("${test}", method.getName());
   }
 
   protected String getParamDisplayName(P param) {
@@ -408,5 +421,20 @@ public class ParamTestRunner<P> extends FriendlyBlockJUnit4ClassRunner {
     } else {
       return type;
     }
+  }
+
+  protected Description getOtherDescription() {
+    initOther();
+    return other;
+  }
+
+  @Override
+  protected String getName() {
+    return super.getName();
+  }
+
+  @Override
+  protected Annotation[] getRunnerAnnotations() {
+    return super.getRunnerAnnotations();
   }
 }

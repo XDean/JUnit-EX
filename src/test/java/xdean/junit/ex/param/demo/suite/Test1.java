@@ -12,17 +12,23 @@ import xdean.junit.ex.param.annotation.ParamTest;
 import xdean.junit.ex.param.annotation.GroupBy.Group;
 
 @RunWith(ParamTestRunner.class)
-@GroupBy(Group.TEST)
+@GroupBy(Group.PARAM)
 public class Test1 {
 
   @Param
-  public static final int[] PARAM = { 1, 2, 3 };
+  public static final int[] PARAM = { 0, 1, 3, 4 };
 
   static int[] ADD = { 1, 2, 3, 4, 5 };
+  static int[] ADD_100 = { 100, 101, 102, 103, 104 };
 
   @ParamTest
   public void testAdd(int i) {
     assertEquals(ADD[i], i + 1);
+  }
+
+  @ParamTest
+  public void testAdd100(int i) {
+    assertEquals(ADD_100[i], i + 100);
   }
 
   @Test

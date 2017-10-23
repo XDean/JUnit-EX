@@ -21,7 +21,7 @@ import xdean.jex.util.cache.CacheUtil;
 class Param<P> {
 
   public static <P> Param<P> create(String name, P value) {
-    return new Param<P>(name, value);
+    return new Param<>(name, value);
   }
 
   String name;

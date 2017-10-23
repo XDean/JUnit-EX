@@ -51,7 +51,7 @@ import org.junit.runners.model.Statement;
  * @since 4.5
  */
 public class FriendlyBlockJUnit4ClassRunner extends FriendlyParentRunner<FrameworkMethod> {
-  protected final ConcurrentHashMap<FrameworkMethod, Description> methodDescriptions = new ConcurrentHashMap<FrameworkMethod, Description>();
+  protected final ConcurrentHashMap<FrameworkMethod, Description> methodDescriptions = new ConcurrentHashMap<>();
 
   /**
    * Creates a BlockJUnit4ClassRunner to run {@code klass}
@@ -336,6 +336,7 @@ public class FriendlyBlockJUnit4ClassRunner extends FriendlyParentRunner<Framewo
     return result;
   }
 
+  @SuppressWarnings("unlikely-arg-type")
   protected Statement withMethodRules(FrameworkMethod method, List<TestRule> testRules,
       Object target, Statement result) {
     for (org.junit.rules.MethodRule each : getMethodRules(target)) {
