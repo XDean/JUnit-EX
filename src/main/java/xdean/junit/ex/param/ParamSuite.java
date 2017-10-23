@@ -1,7 +1,10 @@
 package xdean.junit.ex.param;
 
+import static xdean.jex.util.function.Predicates.*;
+
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
@@ -23,7 +26,7 @@ public class ParamSuite extends Suite {
   }
 
   Description rootDescription, otherDescription;
-  boolean groupByParam = true;
+  boolean groupByParam;
   LinkedListMultimap<Param<?>, ParamTestRunner<?>> paramTests;
 
   @Override
@@ -55,31 +58,8 @@ public class ParamSuite extends Suite {
   private void initDescription() {
     if (rootDescription == null) {
       rootDescription = Description.createSuiteDescription(getName(), getRunnerAnnotations());
-      otherDescription = Description.createSuiteDescription("other");
-      paramTests = LinkedListMultimap.create();
-      for (Runner child : getChildren()) {
-        if (child instanceof ParamTestRunner) {
-          ParamTestRunner<?> ptr = (ParamTestRunner<?>) child;
-          Description ptrOther = ptr.getOtherDescription();
-          if (!ptrOther.isEmpty()) {
-            Description ptrOtherSuite = Description.createSuiteDescription(ptr.getName(), ptr.getRunnerAnnotations());
-            ptrOther.getChildren().forEach(ptrOtherSuite::addChild);
-            otherDescription.addChild(ptrOtherSuite);
-          }
-          ptr.getParams().forEach(p -> paramTests.put(p, ptr));
-        } else if (child instanceof ParamSuite) {
-          ParamSuite ps = (ParamSuite) child;
-          ps.initDescription();
-          if (!ps.otherDescription.isEmpty()) {
-            Description ptrOtherSuite = Description.createSuiteDescription(ps.getName(), ps.getRunnerAnnotations());
-            ps.otherDescription.getChildren().forEach(ptrOtherSuite::addChild);
-            otherDescription.addChild(ptrOtherSuite);
-          }
-          this.paramTests.putAll(ps.paramTests);
-        } else {
-          otherDescription.addChild(super.describeChild(child));
-        }
-      }
+      initOtherDescription();
+      initParamTests();
       if (groupByParam) {
         paramTests.keySet()
             .stream()
@@ -102,10 +82,70 @@ public class ParamSuite extends Suite {
               }
             });
       } else {
-
+        paramTests.values()
+            .stream()
+            .distinct()
+            .forEach(runner -> {
+              List<FrameworkMethod> tests = runner.computeParamTestMethods();
+              if (!tests.isEmpty()) {
+                Description runnerSuite = Description.createSuiteDescription(runner.getName());
+                tests.forEach(test -> {
+                  Description testSuite = Description.createSuiteDescription(test.getName(), test.getAnnotations());
+                  paramTests.entries()
+                      .stream()
+                      .filter(its(Entry::getValue, is(runner)))
+                      .map(Entry::getKey)
+                      .forEach(param -> testSuite.addChild(
+                          param.getDescription(test, runner.getTestDisplayName(test, param, groupByParam))));
+                  runnerSuite.addChild(testSuite);
+                });
+                if (!runnerSuite.isEmpty()) {
+                  rootDescription.addChild(runnerSuite);
+                }
+              }
+            });
       }
       if (!otherDescription.isEmpty()) {
         rootDescription.addChild(otherDescription);
+      }
+    }
+  }
+
+  private void initOtherDescription() {
+    if (otherDescription == null) {
+      otherDescription = Description.createSuiteDescription("other");
+      for (Runner child : getChildren()) {
+        if (child instanceof ParamTestRunner) {
+          ParamTestRunner<?> ptr = (ParamTestRunner<?>) child;
+          Description ptrOther = ptr.getOtherDescription();
+          if (!ptrOther.isEmpty()) {
+            Description ptrOtherSuite = Description.createSuiteDescription(ptr.getName(), ptr.getRunnerAnnotations());
+            ptrOther.getChildren().forEach(ptrOtherSuite::addChild);
+            otherDescription.addChild(ptrOtherSuite);
+          }
+        } else if (child instanceof ParamSuite) {
+          ParamSuite ps = (ParamSuite) child;
+          ps.initOtherDescription();
+          if (!ps.otherDescription.isEmpty()) {
+            ps.otherDescription.getChildren().forEach(otherDescription::addChild);
+          }
+        } else {
+          otherDescription.addChild(super.describeChild(child));
+        }
+      }
+    }
+  }
+
+  private void initParamTests() {
+    paramTests = LinkedListMultimap.create();
+    for (Runner child : getChildren()) {
+      if (child instanceof ParamTestRunner) {
+        ParamTestRunner<?> ptr = (ParamTestRunner<?>) child;
+        ptr.getParams().forEach(p -> paramTests.put(p, ptr));
+      } else if (child instanceof ParamSuite) {
+        ParamSuite ps = (ParamSuite) child;
+        ps.initParamTests();
+        this.paramTests.putAll(ps.paramTests);
       }
     }
   }

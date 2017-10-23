@@ -8,8 +8,8 @@ import xdean.junit.ex.param.annotation.GroupBy;
 import xdean.junit.ex.param.annotation.GroupBy.Group;
 
 @RunWith(ParamSuite.class)
-@SuiteClasses({ Test1.class, Test2.class })
+@SuiteClasses({ SmallSuite.class, Test3.class })
 @GroupBy(Group.PARAM)
-public class TestSuite {
+public class BigSuite {
 
 }

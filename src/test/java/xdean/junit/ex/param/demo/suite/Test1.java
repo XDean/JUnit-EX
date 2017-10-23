@@ -1,7 +1,8 @@
 package xdean.junit.ex.param.demo.suite;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -26,13 +27,15 @@ public class Test1 {
     assertEquals(ADD[i], i + 1);
   }
 
+  @Ignore
   @ParamTest
   public void testAdd100(int i) {
+    fail();
     assertEquals(ADD_100[i], i + 100);
   }
 
   @Test
-  public void testOther1() {
+  public void other1() {
     assertEquals(5, ADD.length);
   }
 }
