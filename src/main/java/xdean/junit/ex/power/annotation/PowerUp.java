@@ -7,11 +7,11 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import xdean.junit.ex.power.PowerUp;
+import xdean.junit.ex.power.PowerUpHandler;
 
 @Documented
 @Retention(RUNTIME)
 @Target(TYPE)
-public @interface PowerUpHandler {
-  Class<? extends PowerUp> value();
+public @interface PowerUp {
+  Class<? extends PowerUpHandler> value();
 }

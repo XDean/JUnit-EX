@@ -1,5 +1,6 @@
 package xdean.junit.ex.power;
 
-public interface PowerUp {
+@FunctionalInterface
+public interface PowerUpHandler {
   PowerUpResult powerup(Class<?> testClass);
 }

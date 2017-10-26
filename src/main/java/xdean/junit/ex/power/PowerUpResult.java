@@ -5,14 +5,15 @@ import java.util.List;
 
 import org.junit.runner.Description;
 
+import io.reactivex.functions.Action;
 import xdean.jex.extra.Pair;
 
 public class PowerUpResult {
-  public static PowerUpResult justBefore(Description desc, Runnable run) {
+  public static PowerUpResult justBefore(Description desc, Action run) {
     return new PowerUpResult().addBefore(desc, run);
   }
 
-  public static PowerUpResult justAfter(Description desc, Runnable run) {
+  public static PowerUpResult justAfter(Description desc, Action run) {
     return new PowerUpResult().addBefore(desc, run);
   }
 
@@ -20,25 +21,25 @@ public class PowerUpResult {
     return new PowerUpResult().setNewTestClass(clz);
   }
 
-  private List<Pair<Description, Runnable>> before = new ArrayList<>();
-  private List<Pair<Description, Runnable>> after = new ArrayList<>();
+  private List<Pair<Description, Action>> before = new ArrayList<>();
+  private List<Pair<Description, Action>> after = new ArrayList<>();
   private Class<?> actualClass;
 
-  public PowerUpResult addBefore(Description desc, Runnable run) {
+  public PowerUpResult addBefore(Description desc, Action run) {
     before.add(Pair.of(desc, run));
     return this;
   }
 
-  public PowerUpResult addAfter(Description desc, Runnable run) {
+  public PowerUpResult addAfter(Description desc, Action run) {
     after.add(Pair.of(desc, run));
     return this;
   }
 
-  public List<Pair<Description, Runnable>> getBefore() {
+  public List<Pair<Description, Action>> getBefore() {
     return before;
   }
 
-  public List<Pair<Description, Runnable>> getAfter() {
+  public List<Pair<Description, Action>> getAfter() {
     return after;
   }
 

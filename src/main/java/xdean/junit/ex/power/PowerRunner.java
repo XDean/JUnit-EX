@@ -9,18 +9,26 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 
+import org.junit.internal.AssumptionViolatedException;
+import org.junit.internal.runners.model.EachTestNotifier;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runner.Runner;
+import org.junit.runner.manipulation.Filter;
+import org.junit.runner.manipulation.Filterable;
+import org.junit.runner.manipulation.NoTestsRemainException;
+import org.junit.runner.manipulation.Sortable;
+import org.junit.runner.manipulation.Sorter;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
 
+import io.reactivex.functions.Action;
 import xdean.jex.util.log.Logable;
 import xdean.junit.ex.power.annotation.ActualRunWith;
-import xdean.junit.ex.power.annotation.PowerUpHandler;
+import xdean.junit.ex.power.annotation.PowerUp;
 
-public class PowerRunner extends Runner implements Logable {
+public class PowerRunner extends Runner implements Logable, Filterable, Sortable {
 
   private Class<?> originTestClass;
   private Runner childRunner;
@@ -51,12 +59,12 @@ public class PowerRunner extends Runner implements Logable {
     getPowerUpHandlers().forEachRemaining(pu -> powerUpResult.mergeAfter(pu.powerup(getActualTestClass())));
   }
 
-  private Iterator<? extends PowerUp> getPowerUpHandlers() {
+  private Iterator<? extends PowerUpHandler> getPowerUpHandlers() {
     return Arrays.stream(originTestClass.getAnnotations())
         .map(Annotation::annotationType)
-        .map(a -> a.getAnnotation(PowerUpHandler.class))
+        .map(a -> a.getAnnotation(PowerUp.class))
         .filter(not(null))
-        .map(PowerUpHandler::value)
+        .map(PowerUp::value)
         .map(c -> {
           try {
             return c.newInstance();
@@ -93,6 +101,36 @@ public class PowerRunner extends Runner implements Logable {
 
   @Override
   public void run(RunNotifier notifier) {
+    powerUpResult.getBefore().forEach(p -> run(notifier, p.getLeft(), p.getRight()));
     childRunner.run(notifier);
+    powerUpResult.getAfter().forEach(p -> run(notifier, p.getLeft(), p.getRight()));
+  }
+
+  private void run(RunNotifier notifier, Description desc, Action run) {
+    EachTestNotifier eachNotifier = new EachTestNotifier(notifier, desc);
+    eachNotifier.fireTestStarted();
+    try {
+      run.run();
+    } catch (AssumptionViolatedException e) {
+      eachNotifier.addFailedAssumption(e);
+    } catch (Throwable e) {
+      eachNotifier.addFailure(e);
+    } finally {
+      eachNotifier.fireTestFinished();
+    }
+  }
+
+  @Override
+  public void filter(Filter filter) throws NoTestsRemainException {
+    if (childRunner instanceof Filterable) {
+      ((Filterable) childRunner).filter(filter);
+    }
+  }
+
+  @Override
+  public void sort(Sorter sorter) {
+    if (childRunner instanceof Sortable) {
+      ((Sortable) childRunner).sort(sorter);
+    }
   }
 }

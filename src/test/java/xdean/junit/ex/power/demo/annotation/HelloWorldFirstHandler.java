@@ -6,25 +6,26 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.junit.runner.Description;
+import xdean.junit.ex.power.annotation.PowerUp;
+import xdean.junit.ex.power.handler.NamedAction;
+import xdean.junit.ex.power.handler.SimpleBefore;
 
-import xdean.junit.ex.power.PowerUp;
-import xdean.junit.ex.power.PowerUpResult;
-import xdean.junit.ex.power.annotation.PowerUpHandler;
+public class HelloWorldFirstHandler implements SimpleBefore {
 
-public class HelloWorldFirstHandler implements PowerUp {
-
-  @PowerUpHandler(HelloWorldFirstHandler.class)
   @Target(TYPE)
   @Retention(RetentionPolicy.RUNTIME)
+  @PowerUp(HelloWorldFirstHandler.class)
   public @interface HelloWorldFirst {
 
   }
 
   @Override
-  public PowerUpResult powerup(Class<?> testClass) {
-    return PowerUpResult.justBefore(Description.createTestDescription(HelloWorldFirstHandler.class, "Hello World"),
-        null);
+  public NamedAction getAction() {
+    return NamedAction.create("HelloWorld", this::HelloWorld);
+  }
+
+  private void HelloWorld() {
+    System.out.println("Hello World");
   }
 
 }

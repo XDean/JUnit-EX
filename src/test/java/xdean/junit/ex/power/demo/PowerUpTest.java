@@ -10,7 +10,12 @@ import xdean.junit.ex.power.demo.annotation.HelloWorldFirstHandler.HelloWorldFir
 @RunWith(PowerRunner.class)
 public class PowerUpTest {
   @Test
-  public void testNormal() throws Exception {
+  public void test1() throws Exception {
     System.out.println("tested");
+  }
+
+  @Test
+  public void test2() {
+
   }
 }
