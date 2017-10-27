@@ -27,7 +27,6 @@ import org.junit.runners.model.RunnerBuilder;
 import io.reactivex.functions.Action;
 import javassist.ClassPool;
 import javassist.CtClass;
-import javassist.Loader;
 import xdean.jex.util.log.Logable;
 import xdean.junit.ex.power.annotation.ActualRunWith;
 import xdean.junit.ex.power.annotation.PowerUp;
@@ -39,14 +38,14 @@ public class PowerRunner extends Runner implements Logable, Filterable, Sortable
   private Runner childRunner;
   private PowerUpResult powerUpResult;
 
-  public PowerRunner(Class<?> clz, RunnerBuilder runnerBuilder) {
+  public PowerRunner(Class<?> clz, RunnerBuilder runnerBuilder) throws Exception {
     this.originTestClass = clz;
     this.powerUpResult = PowerUpResult.justClass(clz);
     calcPowerPlugins();
     calcActualRunner(runnerBuilder);
   }
 
-  protected void calcActualRunner(RunnerBuilder runnerBuilder) {
+  protected void calcActualRunner(RunnerBuilder runnerBuilder) throws Exception {
     RunWith runWith = originTestClass.getAnnotation(RunWith.class);
     ActualRunWith actualRunWith = originTestClass.getAnnotation(ActualRunWith.class);
     if (actualRunWith == null) {
@@ -60,21 +59,25 @@ public class PowerRunner extends Runner implements Logable, Filterable, Sortable
     childRunner = runnerBuilder.safeRunnerForClass(getActualTestClass());
   }
 
-  protected void calcPowerPlugins() {
+  protected void calcPowerPlugins() throws Exception {
     getPowerUpHandlers()
         .forEachRemaining(pu -> powerUpResult.mergeAfter(uncheck(() -> pu.powerup(getActualTestClass()))));
-    // adjustClassName();
+    adjustClassName();
   }
 
-  protected void adjustClassName() {
+  protected void adjustClassName() throws Exception {
     Class<?> clz = getActualTestClass();
     if (clz.getName().equals(originTestClass.getName())) {
       return;
     }
     ClassPool pool = ClassPool.getDefault();
-    CtClass cc = uncheck(() -> pool.getAndRename(clz.getName(), originTestClass.getName()));
-    Loader loader = new Loader(pool);
-    Class<?> newClass = uncheck(() -> cc.toClass(loader, null));
+    CtClass cc = pool.get(clz.getName());
+    cc.defrost();
+    cc.setName(originTestClass.getName());
+
+    ClassLoader cl = new ClassLoader() {
+    };
+    Class<?> newClass = cc.toClass(cl, null);
     powerUpResult.setNewTestClass(newClass);
   }
 

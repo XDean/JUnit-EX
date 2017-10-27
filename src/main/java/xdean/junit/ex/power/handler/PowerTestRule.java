@@ -10,8 +10,8 @@ import xdean.junit.ex.IStatement;
 
 public interface PowerTestRule extends PowerRule, TestRule {
   @Override
-  default Either<TestRule, MethodRule> getRule() {
-    return Either.left(this);
+  default Either<Class<? extends TestRule>, Class<? extends MethodRule>> getRuleClass() {
+    return Either.left(getClass());
   }
 
   @Override

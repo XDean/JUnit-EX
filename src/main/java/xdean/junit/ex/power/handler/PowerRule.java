@@ -18,26 +18,34 @@ import xdean.junit.ex.power.PowerUpHandler;
 import xdean.junit.ex.power.PowerUpResult;
 
 public interface PowerRule extends PowerUpHandler {
+  public static final String POWER_RULE = "$PowerRule$";
+
   @Override
   default PowerUpResult powerup(Class<?> testClass) throws Exception {
     int code = System.identityHashCode(this);
-    Object rule = getRule().unify(a -> a, b -> b);
+    Class<?> ruleClass = getRuleClass().unify(a -> a, b -> b);
     ClassPool pool = ClassPool.getDefault();
-    CtClass ruleClass = pool.get(rule.getClass().getName());
+    CtClass ruleCC = pool.get(ruleClass.getName());
     CtClass cc = pool.get(testClass.getName());
-    cc.defrost();
-    cc.setName(testClass.getName() + "$" + code);
-    CtField field = new CtField(ruleClass, "rule" + code, cc);
+    String newName;
+    if (cc.isFrozen()) {
+      cc.defrost();
+      newName = testClass.getName().substring(0, testClass.getName().lastIndexOf(POWER_RULE)) + POWER_RULE + code;
+    } else {
+      newName = testClass.getName() + POWER_RULE + code;
+    }
+    cc.setName(newName);
+    CtField field = new CtField(ruleCC, "rule" + code, cc);
     ConstPool constPool = cc.getClassFile().getConstPool();
     FieldInfo fieldInfo = field.getFieldInfo();
     AnnotationsAttribute annos = new AnnotationsAttribute(constPool, AnnotationsAttribute.visibleTag);
     annos.addAnnotation(new Annotation(Rule.class.getName(), constPool));
     fieldInfo.addAttribute(annos);
     field.setModifiers(Modifier.PUBLIC | Modifier.FINAL);
-    cc.addField(field, Initializer.byExpr(String.format("new %s()", ruleClass.getName())));
+    cc.addField(field, Initializer.byExpr(String.format("new %s()", ruleCC.getName())));
     Class<?> newClass = cc.toClass();
     return PowerUpResult.justClass(newClass);
   }
 
-  Either<TestRule, MethodRule> getRule();
+  Either<Class<? extends TestRule>, Class<? extends MethodRule>> getRuleClass();
 }

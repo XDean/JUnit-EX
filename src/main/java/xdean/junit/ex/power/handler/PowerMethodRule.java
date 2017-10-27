@@ -11,8 +11,8 @@ import xdean.junit.ex.IStatement;
 public interface PowerMethodRule extends PowerRule, MethodRule {
 
   @Override
-  default Either<TestRule, MethodRule> getRule() {
-    return Either.right(this);
+  default Either<Class<? extends TestRule>, Class<? extends MethodRule>> getRuleClass() {
+    return Either.right(getClass());
   }
 
   @Override
