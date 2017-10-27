@@ -82,14 +82,16 @@ public class PowerRunner extends Runner implements Logable, Filterable, Sortable
   }
 
   protected Iterator<? extends PowerUpHandler> getPowerUpHandlers() {
-    return Stream.concat(
+    return Stream.of(
         Arrays.stream(originTestClass.getAnnotations())
             .map(Annotation::annotationType)
             .map(a -> a.getAnnotation(PowerUp.class)),
+        Stream.of(originTestClass.getAnnotation(PowerUp.class)),
         Stream.of(originTestClass.getAnnotation(PowerUps.class))
             .filter(not(null))
             .map(PowerUps::value)
             .flatMap(Stream::of))
+        .flatMap(s -> s)
         .filter(not(null))
         .map(PowerUp::value)
         .map(c -> {
