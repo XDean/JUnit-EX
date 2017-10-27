@@ -1,6 +1,6 @@
 package xdean.junit.ex.power;
 
-import static xdean.jex.util.function.Predicates.not;
+import static xdean.jex.util.function.Predicates.*;
 import static xdean.jex.util.lang.ExceptionUtil.*;
 import static xdean.jex.util.reflect.AnnotationUtil.*;
 
@@ -8,6 +8,7 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.junit.internal.AssumptionViolatedException;
@@ -21,12 +22,14 @@ import org.junit.runner.manipulation.NoTestsRemainException;
 import org.junit.runner.manipulation.Sortable;
 import org.junit.runner.manipulation.Sorter;
 import org.junit.runner.notification.RunNotifier;
+import org.junit.runner.notification.StoppedByUserException;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
 
 import io.reactivex.functions.Action;
 import javassist.ClassPool;
 import javassist.CtClass;
+import xdean.jex.extra.Pair;
 import xdean.jex.util.log.Logable;
 import xdean.junit.ex.power.annotation.ActualRunWith;
 import xdean.junit.ex.power.annotation.PowerUp;
@@ -37,6 +40,7 @@ public class PowerRunner extends Runner implements Logable, Filterable, Sortable
   private Class<?> originTestClass;
   private Runner childRunner;
   private PowerUpResult powerUpResult;
+  private Description rootDescription;
 
   public PowerRunner(Class<?> clz, RunnerBuilder runnerBuilder) throws Exception {
     this.originTestClass = clz;
@@ -112,20 +116,28 @@ public class PowerRunner extends Runner implements Logable, Filterable, Sortable
 
   @Override
   public Description getDescription() {
-    Description childDescription = childRunner.getDescription();
-    Description newRoot;
-    if (childDescription.isSuite()) {
-      newRoot = childDescription.childlessCopy();
-      powerUpResult.getBefore().forEach(p -> newRoot.addChild(p.getLeft()));
-      childDescription.getChildren().forEach(newRoot::addChild);
-      powerUpResult.getAfter().forEach(p -> newRoot.addChild(p.getLeft()));
-    } else {
-      newRoot = Description.createSuiteDescription("PowerUpTestSuite");
-      powerUpResult.getBefore().forEach(p -> newRoot.addChild(p.getLeft()));
-      newRoot.addChild(childDescription);
-      powerUpResult.getAfter().forEach(p -> newRoot.addChild(p.getLeft()));
+    if (rootDescription == null) {
+      Description childDescription = childRunner.getDescription();
+      if (childDescription.isSuite()) {
+        rootDescription = childDescription.childlessCopy();
+        addToRoot(powerUpResult.getBefore());
+        childDescription.getChildren().forEach(rootDescription::addChild);
+        addToRoot(powerUpResult.getAfter());
+      } else {
+        rootDescription = Description.createSuiteDescription("PowerUpTestSuite");
+        addToRoot(powerUpResult.getBefore());
+        rootDescription.addChild(childDescription);
+        addToRoot(powerUpResult.getAfter());
+      }
     }
-    return newRoot;
+    return rootDescription;
+  }
+
+  private void addToRoot(List<Pair<Description, Action>> list) {
+    list.stream()
+        .map(Pair::getLeft)
+        .filter(not(null))
+        .forEach(rootDescription::addChild);
   }
 
   @Override
@@ -135,11 +147,24 @@ public class PowerRunner extends Runner implements Logable, Filterable, Sortable
     powerUpResult.getAfter().forEach(p -> run(notifier, p.getLeft(), p.getRight()));
   }
 
-  private void run(RunNotifier notifier, Description desc, Action run) {
+  private void run(RunNotifier notifier, Description desc, Action action) {
+    if (desc == null) {
+      EachTestNotifier testNotifier = new EachTestNotifier(notifier, getDescription());
+      try {
+        action.run();
+      } catch (AssumptionViolatedException e) {
+        testNotifier.addFailedAssumption(e);
+      } catch (StoppedByUserException e) {
+        throw e;
+      } catch (Throwable e) {
+        testNotifier.addFailure(e);
+      }
+    }
+
     EachTestNotifier eachNotifier = new EachTestNotifier(notifier, desc);
     eachNotifier.fireTestStarted();
     try {
-      run.run();
+      action.run();
     } catch (AssumptionViolatedException e) {
       eachNotifier.addFailedAssumption(e);
     } catch (Throwable e) {
