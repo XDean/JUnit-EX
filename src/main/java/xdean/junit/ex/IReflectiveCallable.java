@@ -1,4 +1,4 @@
-package xdean.junit.ex.param;
+package xdean.junit.ex;
 
 import java.lang.reflect.InvocationTargetException;
 

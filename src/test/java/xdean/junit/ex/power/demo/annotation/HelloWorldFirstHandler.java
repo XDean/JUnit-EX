@@ -8,9 +8,9 @@ import java.lang.annotation.Target;
 
 import xdean.junit.ex.power.annotation.PowerUp;
 import xdean.junit.ex.power.handler.NamedAction;
-import xdean.junit.ex.power.handler.SimpleBefore;
+import xdean.junit.ex.power.handler.PowerBefore;
 
-public class HelloWorldFirstHandler implements SimpleBefore {
+public class HelloWorldFirstHandler implements PowerBefore {
 
   @Target(TYPE)
   @Retention(RetentionPolicy.RUNTIME)
@@ -27,5 +27,4 @@ public class HelloWorldFirstHandler implements SimpleBefore {
   private void HelloWorld() {
     System.out.println("Hello World");
   }
-
 }

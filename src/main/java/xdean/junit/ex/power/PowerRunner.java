@@ -1,13 +1,14 @@
 package xdean.junit.ex.power;
 
 import static xdean.jex.util.function.Predicates.not;
-import static xdean.jex.util.lang.ExceptionUtil.throwAsUncheck;
+import static xdean.jex.util.lang.ExceptionUtil.*;
 import static xdean.jex.util.reflect.AnnotationUtil.*;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.internal.runners.model.EachTestNotifier;
@@ -24,9 +25,13 @@ import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
 
 import io.reactivex.functions.Action;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.Loader;
 import xdean.jex.util.log.Logable;
 import xdean.junit.ex.power.annotation.ActualRunWith;
 import xdean.junit.ex.power.annotation.PowerUp;
+import xdean.junit.ex.power.annotation.PowerUps;
 
 public class PowerRunner extends Runner implements Logable, Filterable, Sortable {
 
@@ -41,7 +46,7 @@ public class PowerRunner extends Runner implements Logable, Filterable, Sortable
     calcActualRunner(runnerBuilder);
   }
 
-  private void calcActualRunner(RunnerBuilder runnerBuilder) {
+  protected void calcActualRunner(RunnerBuilder runnerBuilder) {
     RunWith runWith = originTestClass.getAnnotation(RunWith.class);
     ActualRunWith actualRunWith = originTestClass.getAnnotation(ActualRunWith.class);
     if (actualRunWith == null) {
@@ -55,22 +60,41 @@ public class PowerRunner extends Runner implements Logable, Filterable, Sortable
     childRunner = runnerBuilder.safeRunnerForClass(getActualTestClass());
   }
 
-  private void calcPowerPlugins() {
-    getPowerUpHandlers().forEachRemaining(pu -> powerUpResult.mergeAfter(pu.powerup(getActualTestClass())));
+  protected void calcPowerPlugins() {
+    getPowerUpHandlers()
+        .forEachRemaining(pu -> powerUpResult.mergeAfter(uncheck(() -> pu.powerup(getActualTestClass()))));
+    // adjustClassName();
   }
 
-  private Iterator<? extends PowerUpHandler> getPowerUpHandlers() {
-    return Arrays.stream(originTestClass.getAnnotations())
-        .map(Annotation::annotationType)
-        .map(a -> a.getAnnotation(PowerUp.class))
+  protected void adjustClassName() {
+    Class<?> clz = getActualTestClass();
+    if (clz.getName().equals(originTestClass.getName())) {
+      return;
+    }
+    ClassPool pool = ClassPool.getDefault();
+    CtClass cc = uncheck(() -> pool.getAndRename(clz.getName(), originTestClass.getName()));
+    Loader loader = new Loader(pool);
+    Class<?> newClass = uncheck(() -> cc.toClass(loader, null));
+    powerUpResult.setNewTestClass(newClass);
+  }
+
+  protected Iterator<? extends PowerUpHandler> getPowerUpHandlers() {
+    return Stream.concat(
+        Arrays.stream(originTestClass.getAnnotations())
+            .map(Annotation::annotationType)
+            .map(a -> a.getAnnotation(PowerUp.class)),
+        Stream.of(originTestClass.getAnnotation(PowerUps.class))
+            .filter(not(null))
+            .map(PowerUps::value)
+            .flatMap(Stream::of))
         .filter(not(null))
         .map(PowerUp::value)
         .map(c -> {
           try {
             return c.newInstance();
           } catch (InstantiationException | IllegalAccessException e) {
-            String msg = String.format("%s must have a default public no-arg constructor.", c);
-            log().error(msg);
+            String msg = String.format("%s must have a public no-arg constructor.", c);
+            log().error(msg, e);
             return throwAsUncheck(new InitializationError(msg));
           }
         })

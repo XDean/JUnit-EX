@@ -2,5 +2,5 @@ package xdean.junit.ex.power;
 
 @FunctionalInterface
 public interface PowerUpHandler {
-  PowerUpResult powerup(Class<?> testClass);
+  PowerUpResult powerup(Class<?> testClass) throws Exception;
 }

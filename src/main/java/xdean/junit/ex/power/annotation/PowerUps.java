@@ -4,16 +4,12 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Documented;
-import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
-import xdean.junit.ex.power.PowerUpHandler;
 
 @Documented
 @Retention(RUNTIME)
 @Target(TYPE)
-@Repeatable(PowerUps.class)
-public @interface PowerUp {
-  Class<? extends PowerUpHandler> value();
+public @interface PowerUps {
+  PowerUp[] value();
 }

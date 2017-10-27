@@ -2,9 +2,11 @@ package xdean.junit.ex.param;
 
 import org.junit.runners.model.Statement;
 
+import xdean.junit.ex.IReflectiveCallable;
+
 interface Util {
 
-  static Statement statement(xdean.junit.ex.param.IStatement s) {
+  static Statement statement(xdean.junit.ex.IStatement s) {
     return s.toJunit();
   }
 

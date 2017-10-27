@@ -5,11 +5,11 @@ import org.junit.runner.Description;
 import xdean.junit.ex.power.PowerUpHandler;
 import xdean.junit.ex.power.PowerUpResult;
 
-public interface SimpleBefore extends PowerUpHandler {
+public interface PowerAfter extends PowerUpHandler {
   @Override
   default PowerUpResult powerup(Class<?> testClass) {
     NamedAction action = getAction();
-    return PowerUpResult.justBefore(
+    return PowerUpResult.justAfter(
         Description.createTestDescription(getClass(), action.getName()),
         action.getAction());
   }
