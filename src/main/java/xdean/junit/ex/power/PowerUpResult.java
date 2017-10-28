@@ -9,6 +9,8 @@ import io.reactivex.functions.Action;
 import xdean.jex.extra.Pair;
 
 public class PowerUpResult {
+  private static final PowerUpResult EMPTY = new PowerUpResult();
+
   public static PowerUpResult justBefore(Description desc, Action run) {
     return new PowerUpResult().addBefore(desc, run);
   }
@@ -21,9 +23,21 @@ public class PowerUpResult {
     return new PowerUpResult().setNewTestClass(clz);
   }
 
+  public static PowerUpResult create() {
+    return new PowerUpResult();
+  }
+
+  public static PowerUpResult empty() {
+    return EMPTY;
+  }
+
   private List<Pair<Description, Action>> before = new ArrayList<>();
   private List<Pair<Description, Action>> after = new ArrayList<>();
   private Class<?> actualClass;
+
+  private PowerUpResult() {
+
+  }
 
   public PowerUpResult addBefore(Description desc, Action run) {
     before.add(Pair.of(desc, run));
