@@ -159,6 +159,7 @@ public class PowerRunner extends Runner implements Logable, Filterable, Sortable
       } catch (Throwable e) {
         testNotifier.addFailure(e);
       }
+      return;
     }
 
     EachTestNotifier eachNotifier = new EachTestNotifier(notifier, desc);
