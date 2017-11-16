@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.XDean</groupId>
 	<artifactId>JUnit-EX</artifactId>
-	<version>0.0.2</version>
+	<version>0.0.3-SNAPSHOT</version>
 	<name>JUnit-EX</name>
 	<description>JUnit Extension</description>
 	<url>https://github.com/XDean/JUnit-EX</url>
