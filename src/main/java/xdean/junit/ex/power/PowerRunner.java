@@ -103,7 +103,7 @@ public class PowerRunner extends Runner implements Logable, Filterable, Sortable
             return c.newInstance();
           } catch (InstantiationException | IllegalAccessException e) {
             String msg = String.format("%s must have a public no-arg constructor.", c);
-            log().error(msg, e);
+            error().log(msg, e);
             return throwAsUncheck(new InitializationError(msg));
           }
         })
