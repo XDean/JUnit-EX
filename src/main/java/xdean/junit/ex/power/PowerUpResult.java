@@ -6,7 +6,7 @@ import java.util.List;
 import org.junit.runner.Description;
 
 import io.reactivex.functions.Action;
-import xdean.jex.extra.Pair;
+import xdean.jex.extra.collection.Pair;
 
 public class PowerUpResult {
   private static final PowerUpResult EMPTY = new PowerUpResult();

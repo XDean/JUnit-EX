@@ -1,6 +1,7 @@
 package xdean.junit.ex.param;
 
-import static xdean.jex.util.lang.ExceptionUtil.*;
+import static xdean.jex.util.lang.ExceptionUtil.throwAsUncheck;
+import static xdean.jex.util.lang.ExceptionUtil.uncheck;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -28,7 +29,7 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
 
-import xdean.jex.extra.Pair;
+import xdean.jex.extra.collection.Pair;
 import xdean.jex.util.lang.PrimitiveTypeUtil;
 import xdean.jex.util.reflect.AnnotationUtil;
 import xdean.jex.util.reflect.GenericUtil;

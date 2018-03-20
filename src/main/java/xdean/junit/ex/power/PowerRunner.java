@@ -1,8 +1,12 @@
 package xdean.junit.ex.power;
 
-import static xdean.jex.util.function.Predicates.*;
-import static xdean.jex.util.lang.ExceptionUtil.*;
-import static xdean.jex.util.reflect.AnnotationUtil.*;
+import static xdean.jex.util.function.Predicates.not;
+import static xdean.jex.util.lang.ExceptionUtil.throwAsUncheck;
+import static xdean.jex.util.lang.ExceptionUtil.uncheck;
+import static xdean.jex.util.reflect.AnnotationUtil.addAnnotation;
+import static xdean.jex.util.reflect.AnnotationUtil.changeAnnotationValue;
+import static xdean.jex.util.reflect.AnnotationUtil.createAnnotationFromMap;
+import static xdean.jex.util.reflect.AnnotationUtil.removeAnnotation;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -29,8 +33,8 @@ import org.junit.runners.model.RunnerBuilder;
 import io.reactivex.functions.Action;
 import javassist.ClassPool;
 import javassist.CtClass;
-import xdean.jex.extra.Pair;
-import xdean.jex.util.log.Logable;
+import xdean.jex.extra.collection.Pair;
+import xdean.jex.log.Logable;
 import xdean.junit.ex.power.annotation.ActualRunWith;
 import xdean.junit.ex.power.annotation.PowerUp;
 import xdean.junit.ex.power.annotation.PowerUps;

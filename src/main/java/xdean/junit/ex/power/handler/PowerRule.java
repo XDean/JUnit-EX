@@ -13,7 +13,7 @@ import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.FieldInfo;
 import javassist.bytecode.annotation.Annotation;
-import xdean.jex.extra.Either;
+import xdean.jex.extra.collection.Either;
 import xdean.junit.ex.power.PowerUpHandler;
 import xdean.junit.ex.power.PowerUpResult;
 

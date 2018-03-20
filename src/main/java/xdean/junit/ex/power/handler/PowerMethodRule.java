@@ -5,7 +5,7 @@ import org.junit.rules.TestRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 
-import xdean.jex.extra.Either;
+import xdean.jex.extra.collection.Either;
 import xdean.junit.ex.IStatement;
 
 public interface PowerMethodRule extends PowerRule, MethodRule {
